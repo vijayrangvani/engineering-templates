@@ -1,0 +1,42 @@
+# TEMPLATE: Deployment = "keep N copies of this pod running, roll out updates safely".
+# Shape: metadata -> spec.replicas -> spec.selector -> spec.template (a Pod) -> containers
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: items-api
+  namespace: items
+  labels: { app: items-api }
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: items-api }        # MUST match template.metadata.labels below
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }   # zero-downtime: add 1 new before removing old
+  template:
+    metadata:
+      labels: { app: items-api }           # the Service finds pods by this label
+    spec:
+      containers:
+        - name: api
+          image: items-api:1.0             # registry/name:tag; avoid :latest in real deploys
+          imagePullPolicy: IfNotPresent    # kind/minikube local image -> use Never
+          ports:
+            - containerPort: 8000
+          envFrom:                         # load ALL keys as env vars
+            - configMapRef: { name: items-config }
+            - secretRef: { name: items-secret }
+          env:
+            - name: POD_NAME               # downward API: inject this pod's own name
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }   # what the scheduler reserves
+            limits:   { cpu: "500m", memory: "256Mi" }   # hard cap (memory over -> OOMKilled)
+          readinessProbe:                  # failing -> removed from Service (no traffic), NOT restarted
+            httpGet: { path: /ready, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:                   # failing -> container restarted
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 10

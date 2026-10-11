@@ -1,0 +1,6 @@
+# TEMPLATE: namespace = folder for your app's objects.
+# Every K8s YAML has the same 4 top-level keys: apiVersion, kind, metadata, spec (Namespace has no spec).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: items

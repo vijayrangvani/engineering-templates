@@ -1,0 +1,9 @@
+# TEMPLATE: ConfigMap = non-secret settings, injected as env vars.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: items-config
+  namespace: items
+data:                       # all values are strings -> quote booleans/numbers
+  APP_NAME: "items-api"
+  DEBUG: "false"

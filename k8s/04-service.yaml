@@ -1,0 +1,13 @@
+# TEMPLATE: Service = stable name + load balancing across matching pods.
+apiVersion: v1
+kind: Service
+metadata:
+  name: items-api
+  namespace: items
+spec:
+  type: ClusterIP              # internal only. NodePort/LoadBalancer expose outside.
+  selector: { app: items-api } # sends traffic to pods with this label
+  ports:
+    - port: 80                 # port other pods call:  http://items-api.items.svc.cluster.local
+      targetPort: 8000         # containerPort on the pod
+# Test from laptop: kubectl -n items port-forward svc/items-api 8000:80   (hits ONE pod only)

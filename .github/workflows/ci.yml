@@ -1,0 +1,42 @@
+# TEMPLATE: GitHub Actions CI. Runs on every push / PR: install -> lint -> test -> build image.
+# Shape: on (trigger) -> jobs -> runs-on -> steps (checkout -> setup -> install -> check -> build)
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fastapi-app       # all `run:` steps execute in this folder
+    steps:
+      - uses: actions/checkout@v4            # get the repo code
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip                         # reuse downloaded packages between runs
+          cache-dependency-path: fastapi-app/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt ruff
+
+      - name: Lint
+        run: ruff check .                    # fast linter; fails the job on errors
+
+      - name: Test
+        run: pytest -q
+
+  docker:
+    needs: test                              # only build if tests passed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t items-api:${{ github.sha }} fastapi-app   # tag with commit SHA
+      # To push to a registry, add a login step (e.g. docker/login-action@v3) with
+      # credentials from repo Settings -> Secrets: ${{ secrets.REGISTRY_TOKEN }}

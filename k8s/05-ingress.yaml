@@ -1,0 +1,18 @@
+# TEMPLATE: Ingress = HTTP routing from outside into Services. Needs an ingress controller (e.g. ingress-nginx).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: items-ingress
+  namespace: items
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: items.local                  # add "127.0.0.1 items.local" to /etc/hosts for local tests
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: items-api
+                port: { number: 80 }
