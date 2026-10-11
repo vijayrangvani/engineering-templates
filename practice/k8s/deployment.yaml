@@ -1,0 +1,10 @@
+# PRACTICE: Deployment + Service for image items-api:1.0 on port 8000, namespace "items".
+# Reference answer: ../../k8s/03-deployment.yaml and 04-service.yaml
+#
+# Shape:  apiVersion / kind / metadata / spec
+#   spec: replicas 3 -> selector.matchLabels -> template (labels MUST match) -> containers
+#   container: name, image, ports, envFrom (configmap + secret), resources, readiness + liveness probes
+# Then "---" and a ClusterIP Service: port 80 -> targetPort 8000, selector app: items-api
+#
+# Stuck on a field?  kubectl explain deployment.spec.template.spec.containers
+# Check it:          kubectl apply --dry-run=client -f deployment.yaml

@@ -1,0 +1,10 @@
+# PRACTICE: Compose stack = api (build ../../fastapi-app) + postgres:16 + redis:7-alpine
+# Reference answer: ../../docker/docker-compose.yml
+#
+# Shape per service: image/build -> environment -> ports -> volumes -> depends_on -> healthcheck
+#   api   : DATABASE_URL uses host "db" (service name!), port 8000:8000, wait for db healthy
+#   db    : user/password/db env, named volume pgdata, healthcheck pg_isready
+#   redis : port 6379
+# Don't forget the top-level `volumes:` block.
+#
+# Check it: docker compose config     (validates and prints the merged file)

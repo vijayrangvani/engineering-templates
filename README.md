@@ -11,6 +11,7 @@ Start new projects from here instead of random copy-paste, and understand every 
 | [`.github/workflows/`](.github/workflows) | CI: lint → test → build image (runs on this repo) | on → jobs → runs-on → steps |
 | [`terraform/`](terraform) | AWS provider, S3, security group, EC2, variables, outputs | provider → resources → variables → outputs |
 | [`llm/`](llm) | OpenAI + Anthropic clients, structured output, LangGraph agent with memory, Qdrant RAG | client → model → messages → call → parse |
+| [`practice/`](practice) | Blank versions (shape + TODO only) with the same tests: drill writing it yourself | shape → write → test → compare |
 | [`python/`](python) | Logging setup, HTTP client with retries/backoff, CLI script with argparse | — |
 
 ## How I use this repo
