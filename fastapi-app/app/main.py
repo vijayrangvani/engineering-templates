@@ -15,7 +15,8 @@ from app.routers import items
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create tables if missing. Fine for learning; real projects use Alembic migrations.
+    # Startup: create tables if missing (dev convenience). Real deploys run `alembic upgrade head`
+    # instead; see MIGRATIONS.md.
     Base.metadata.create_all(bind=engine)
     yield
     # Shutdown: release pooled connections.

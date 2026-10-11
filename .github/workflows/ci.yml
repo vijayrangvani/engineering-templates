@@ -10,9 +10,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false                       # one folder failing doesn't cancel the others
+      matrix:                                # same steps, run once per folder (in parallel)
+        app: [fastapi-app, auth-jwt, llm-testing, llm-streaming, mcp-server, async-jobs, observability]
     defaults:
       run:
-        working-directory: fastapi-app       # all `run:` steps execute in this folder
+        working-directory: ${{ matrix.app }} # all `run:` steps execute in this folder
     steps:
       - uses: actions/checkout@v5            # get the repo code
 
@@ -20,16 +24,25 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip                         # reuse downloaded packages between runs
-          cache-dependency-path: fastapi-app/requirements.txt
+          cache-dependency-path: ${{ matrix.app }}/requirements.txt
 
       - name: Install dependencies
         run: pip install -r requirements.txt ruff
 
       - name: Lint
-        run: ruff check --output-format=github .                    # fast linter; fails the job on errors
+        run: ruff check --output-format=github .   # fast linter; fails the job on errors
 
       - name: Test
         run: pytest -q
+
+      - name: Migrations match models
+        if: matrix.app == 'fastapi-app'      # step runs only for this folder
+        env:
+          DATABASE_URL: sqlite:///./ci.db
+        run: |
+          alembic upgrade head
+          alembic check
+          alembic downgrade base
 
   docker:
     needs: test                              # only build if tests passed

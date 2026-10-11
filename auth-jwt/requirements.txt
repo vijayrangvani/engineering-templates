@@ -1,0 +1,7 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pyjwt>=2.9               # create / verify JWTs
+pwdlib[argon2]>=0.2      # password hashing (Argon2), what FastAPI docs now recommend
+python-multipart>=0.0.9  # needed for the OAuth2 login form
+pytest>=8
+httpx>=0.27

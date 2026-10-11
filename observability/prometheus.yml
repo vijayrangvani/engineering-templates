@@ -1,0 +1,7 @@
+# TEMPLATE: Prometheus scrape config. Prometheus PULLS /metrics every 15s.
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: api
+    static_configs:
+      - targets: ["api:8000"]      # Compose service name:port
