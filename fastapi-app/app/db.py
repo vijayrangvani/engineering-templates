@@ -5,6 +5,9 @@ Shape to remember:
     -> route uses it -> commit on success / rollback on error -> always close.
 """
 from collections.abc import Generator
+from typing import Annotated
+
+from fastapi import Depends
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -44,3 +47,8 @@ def get_db() -> Generator[Session, None, None]:
         raise              # re-raise so FastAPI still returns the error
     finally:
         db.close()         # ALWAYS return the connection to the pool
+
+
+# Reusable type alias: write `db: DbSession` in routes instead of `db: Session = Depends(get_db)`.
+# Annotated[type, metadata] is FastAPI's recommended style (and avoids a function call in defaults).
+DbSession = Annotated[Session, Depends(get_db)]
