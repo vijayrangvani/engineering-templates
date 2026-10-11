@@ -14,9 +14,9 @@ jobs:
       run:
         working-directory: fastapi-app       # all `run:` steps execute in this folder
     steps:
-      - uses: actions/checkout@v4            # get the repo code
+      - uses: actions/checkout@v5            # get the repo code
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip                         # reuse downloaded packages between runs
@@ -26,7 +26,7 @@ jobs:
         run: pip install -r requirements.txt ruff
 
       - name: Lint
-        run: ruff check .                    # fast linter; fails the job on errors
+        run: ruff check --output-format=github .                    # fast linter; fails the job on errors
 
       - name: Test
         run: pytest -q
@@ -35,7 +35,7 @@ jobs:
     needs: test                              # only build if tests passed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build image
         run: docker build -t items-api:${{ github.sha }} fastapi-app   # tag with commit SHA
       # To push to a registry, add a login step (e.g. docker/login-action@v3) with
