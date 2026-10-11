@@ -9,7 +9,7 @@ Start new projects from here instead of random copy-paste, and understand every 
 | [`auth-jwt/`](auth-jwt) | Register, login (OAuth2 form), JWT, Argon2 hashing, protected route, role check | hash on register → verify on login → token → `Depends(get_current_user)` |
 | [`llm-testing/`](llm-testing) | Testable LLM code: injected client, fake client, output validation + retry, eval set with accuracy gate | parse tests → fake-client tests → real-model evals |
 | [`llm-streaming/`](llm-streaming) | Token streaming with SSE + a tiny browser page (runs free without an API key) | async generator → `data: …\n\n` → `[DONE]` |
-| [`mcp-server/`](mcp-server) | MCP server with tools, a resource and a prompt; Claude Desktop / Claude Code setup | `FastMCP` → `@tool` / `@resource` / `@prompt` → `run()` |
+| [`mcp-server/`](mcp-server) | MCP server with tools, a resource and a prompt; Claude Desktop / Claude Code setup | `MCPServer` (SDK v2; was `FastMCP`) → `tool` / `resource` / `prompt` → `run()` |
 | [`async-jobs/`](async-jobs) | Async SQLAlchemy, background jobs with polling, `asyncio.gather` | 202 + job row → background task (own session) → poll |
 | [`observability/`](observability) | JSON logs, request IDs, Prometheus metrics, Prometheus + Grafana compose | middleware → log + count + time → `/metrics` |
 | [`docker/`](docker) | Compose stack (API + Postgres + Redis, healthchecks, volumes), multi-stage Dockerfile | services → build/image → env → ports → volumes → depends_on → healthcheck |
