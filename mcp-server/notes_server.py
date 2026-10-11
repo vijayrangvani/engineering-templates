@@ -4,8 +4,8 @@ MCP in one line: a standard plug so ANY AI app can use YOUR functions/data witho
   tool     = action the model can call (has side effects / computes)
   resource = read-only data the client can load (like a GET)
   prompt   = reusable prompt template the user can pick
-Run (stdio, how desktop clients launch it):  python server.py
-Debug in a browser UI:                         mcp dev server.py
+Run (stdio, how desktop clients launch it):  python notes_server.py
+Debug in a browser UI:                         mcp dev notes_server.py
 """
 from mcp.server.fastmcp import FastMCP
 

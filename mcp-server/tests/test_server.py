@@ -1,6 +1,6 @@
 import asyncio
 
-import server
+import notes_server as server
 
 
 def setup_function():
