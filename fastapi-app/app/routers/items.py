@@ -8,7 +8,7 @@ router = APIRouter(prefix="/items", tags=["items"])
 
 
 @router.get("", response_model=list[schemas.ItemOut])
-def list_items(skip: int = 0, limit: int = 20, db: DbSession):
+def list_items(db: DbSession, skip: int = 0, limit: int = 20):
     return crud.list_items(db, skip, min(limit, 100))   # cap page size
 
 
