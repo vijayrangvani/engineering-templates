@@ -6,15 +6,16 @@ MCP in one line: a standard plug so ANY AI app can use YOUR functions/data witho
   prompt   = reusable prompt template the user can pick
 Run (stdio, how desktop clients launch it):  python notes_server.py
 Debug in a browser UI:                         mcp dev notes_server.py
+Note: mcp SDK v2 renamed FastMCP -> MCPServer. Older tutorials use `from mcp.server.fastmcp import FastMCP`.
 """
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
-mcp = FastMCP("notes")                 # server name shown in the client
+mcp = MCPServer("notes")               # server name shown in the client
 
 NOTES: dict[str, str] = {}             # swap for a DB in real use
 
 
-@mcp.tool()
+# Plain functions first (business logic, easy to unit-test), then registered with MCP below.
 def add_note(title: str, body: str) -> str:
     """Save a note. Use when the user asks to remember or write something down."""
     # The docstring + type hints become the tool description/schema the MODEL reads. Write them well.
@@ -22,24 +23,27 @@ def add_note(title: str, body: str) -> str:
     return f"saved '{title}'"
 
 
-@mcp.tool()
 def search_notes(query: str) -> list[str]:
     """Return titles of notes whose title or body contains the query (case-insensitive)."""
     q = query.lower()
     return [t for t, b in NOTES.items() if q in t.lower() or q in b.lower()]
 
 
-@mcp.resource("notes://{title}")
 def read_note(title: str) -> str:
     """Full text of one note."""
     return NOTES.get(title, f"no note named '{title}'")
 
 
-@mcp.prompt()
 def weekly_review() -> str:
     """Prompt template: review all notes."""
     return "Search my notes, group them by theme, and list 3 follow-up actions."
 
 
+# Registration. Same as writing @mcp.tool() above each function.
+mcp.tool()(add_note)
+mcp.tool()(search_notes)
+mcp.resource("notes://{title}")(read_note)
+mcp.prompt()(weekly_review)
+
 if __name__ == "__main__":
-    mcp.run()                          # default transport: stdio
+    mcp.run(transport="stdio")         # desktop clients start the server and talk over stdin/stdout
