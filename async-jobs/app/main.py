@@ -56,7 +56,7 @@ async def generate_report(report_id: int) -> None:
             await asyncio.sleep(0.1)                     # stand-in for slow work (LLM call, PDF, ...)
             report.result = f"Report about {report.topic}"
             report.status = "done"
-        except Exception:
+        except Exception:  # noqa: BLE001  deliberate: any failure must mark the job
             report.status = "failed"                     # never leave a job stuck in pending
         await db.commit()
 

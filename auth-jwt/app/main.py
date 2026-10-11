@@ -10,7 +10,12 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 
-from app.security import create_access_token, decode_token, hash_password, verify_password
+from app.security import (
+    create_access_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 
 app = FastAPI(title="auth-jwt")
 

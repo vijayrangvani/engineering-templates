@@ -33,16 +33,22 @@ jobs:
         run: ruff check --output-format=github .   # fast linter; fails the job on errors
 
       - name: Test
-        run: pytest -q
+        shell: bash
+        run: |
+          # On failure, turn the error lines into GitHub annotations (visible on the run page).
+          pytest -q --tb=short -rf 2>&1 | tee pytest.log; code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then grep -E "Error|FAILED|assert" pytest.log | head -15 | sed 's/^/::error::/'; fi
+          exit $code
 
       - name: Migrations match models
         if: matrix.app == 'fastapi-app'      # step runs only for this folder
         env:
           DATABASE_URL: sqlite:///./ci.db
+        shell: bash
         run: |
-          alembic upgrade head
-          alembic check
-          alembic downgrade base
+          set -o pipefail
+          { alembic upgrade head && alembic check && alembic downgrade base; } 2>&1 | tee alembic.log \
+            || { grep -E "Error|error" alembic.log | head -10 | sed 's/^/::error::/'; exit 1; }
 
   docker:
     needs: test                              # only build if tests passed

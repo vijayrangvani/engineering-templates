@@ -42,7 +42,7 @@ async def sse_events(prompt: str) -> AsyncIterator[str]:
     try:
         async for token in source(prompt):
             yield f"data: {json.dumps({'token': token})}\n\n"   # JSON keeps newlines/quotes safe
-    except Exception as e:                 # headers are already sent: report errors IN the stream
+    except Exception as e:  # noqa: BLE001  deliberate: headers already sent, report errors IN the stream
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
     yield "data: [DONE]\n\n"               # tell the client to stop listening
 
