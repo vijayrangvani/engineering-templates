@@ -38,7 +38,7 @@ jobs:
           # On failure, turn the error lines into GitHub annotations (visible on the run page).
           set +e   # GitHub's bash runs with -e; turn it off so we reach the error-reporting line
           pytest -q --tb=short -rf 2>&1 | tee pytest.log; code=${PIPESTATUS[0]}
-          if [ $code -ne 0 ]; then tail -25 pytest.log | sed 's/^/::error::/'; fi
+          if [ $code -ne 0 ]; then grep -E '^E |^FAILED' pytest.log | head -8 | sed 's/^/::error::/'; fi
           exit $code
 
       - name: Migrations match models
