@@ -1,20 +1,22 @@
-# TEMPLATE: multi-stage build -> smaller final image (build tools stay in stage 1).
-# Use when deps need compilers (e.g. some ML / crypto packages).
+# TEMPLATE: multi-stage build -> smaller final image (uv and build tools stay in stage 1).
+# Use when deps need compilers (e.g. some ML / crypto packages). Build from a folder that has
+# pyproject.toml + uv.lock + app/:   docker build -f ../docker/Dockerfile.multistage -t api .
 
-# ---- Stage 1: build wheels ----
-FROM python:3.12-slim AS builder
+# ---- Stage 1: build the virtualenv ----
+FROM python:3.14-slim AS builder
+COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /bin/uv
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*           # clean apt cache in the SAME layer
-WORKDIR /build
-COPY requirements.txt .
-RUN pip wheel --wheel-dir /wheels -r requirements.txt
-
-# ---- Stage 2: runtime (no compilers) ----
-FROM python:3.12-slim
-ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /app
-COPY --from=builder /wheels /wheels          # only the built wheels cross over
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --locked --no-dev                # builds wheels with compilers available
+
+# ---- Stage 2: runtime (no compilers, no uv) ----
+FROM python:3.14-slim
+ENV PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
+WORKDIR /app
+COPY --from=builder /app/.venv /app/.venv    # only the finished venv crosses over
 COPY app ./app
 RUN useradd --create-home appuser
 USER appuser

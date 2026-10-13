@@ -1,2 +1,0 @@
-mcp>=2,<3     # official Model Context Protocol Python SDK (v2 API: MCPServer)
-pytest>=8

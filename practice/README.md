@@ -8,8 +8,8 @@ Same files as the templates, but each one has only the **shape** (comments + `TO
 3. Check it:
    ```bash
    cd practice/fastapi-app
-   pip install -r requirements.txt
-   pytest -q            # all 4 tests pass when config, db, models, schemas, crud, router and main are done
+   uv sync
+   uv run pytest -q            # all 4 tests pass when config, db, models, schemas, crud, router and main are done
    ```
    YAML: `docker compose config` / `kubectl apply --dry-run=client -f deployment.yaml`
 4. Only then compare with the reference and note what you missed.

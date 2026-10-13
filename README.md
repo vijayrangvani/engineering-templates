@@ -28,17 +28,16 @@ Start new projects from here instead of random copy-paste, and understand every 
 
 ## Run any folder
 ```bash
-cd <folder> && pip install -r requirements.txt && pytest -q
+cd <folder> && uv sync && uv run pytest -q     # one-time: brew install uv
 ```
 
 ## Quick start
 ```bash
 cd fastapi-app
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+uv sync                           # creates .venv on Python 3.14 with locked versions
 cp .env.example .env
-pytest -q                          # tests
-uvicorn app.main:app --reload      # http://localhost:8000/docs
+uv run pytest -q                   # tests
+uv run uvicorn app.main:app --reload   # http://localhost:8000/docs
 
 cd ../docker && docker compose up -d --build   # API + Postgres + Redis
 ```

@@ -1,0 +1,25 @@
+# Managed with uv:  uv sync  (creates .venv with the exact versions in uv.lock)
+#   add a package:  uv add <pkg>        dev-only:  uv add --dev <pkg>
+#   run anything:   uv run pytest  /  uv run uvicorn app.main:app --reload
+[project]
+name = "llm-template"
+version = "0.1.0"
+description = "LLM clients, structured output, LangGraph agent, Qdrant RAG"
+requires-python = ">=3.14"             # keep equal to .python-version
+dependencies = [
+    "openai>=1.50",
+    "anthropic>=0.40",
+    "langgraph>=0.2",
+    "langchain-openai>=0.2",
+    "qdrant-client>=1.12",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.17"]
+
+[tool.uv]
+package = false                        # an app / script folder, not an installable library
+
+[tool.ruff]
+target-version = "py314"

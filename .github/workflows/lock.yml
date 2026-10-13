@@ -1,0 +1,32 @@
+# Manual "refresh the lockfiles" button: Actions tab → update-locks → Run workflow.
+# Locally you'd just run `uv lock` inside a folder — this does every folder from GitHub.
+name: update-locks
+on:
+  workflow_dispatch:
+    inputs:
+      upgrade:
+        description: "Upgrade packages to newest allowed versions?"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - name: Lock every folder that has a pyproject.toml
+        run: |
+          for f in $(git ls-files '*pyproject.toml'); do
+            d=$(dirname "$f"); echo "== $d"
+            (cd "$d" && uv lock ${{ inputs.upgrade && '--upgrade' || '' }})
+          done
+      - name: Commit lockfiles if they changed
+        run: |
+          git add -A '*uv.lock'
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update uv.lock files"
+          git push

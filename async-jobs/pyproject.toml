@@ -1,0 +1,23 @@
+# Managed with uv:  uv sync  (creates .venv with the exact versions in uv.lock)
+#   add a package:  uv add <pkg>        dev-only:  uv add --dev <pkg>
+#   run anything:   uv run pytest  /  uv run uvicorn app.main:app --reload
+[project]
+name = "async-jobs-template"
+version = "0.1.0"
+description = "Async SQLAlchemy + background jobs"
+requires-python = ">=3.14"             # keep equal to .python-version
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0.30",
+    "aiosqlite>=0.20",  # async SQLite driver (Postgres: asyncpg)
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.17"]
+
+[tool.uv]
+package = false                        # an app / script folder, not an installable library
+
+[tool.ruff]
+target-version = "py314"

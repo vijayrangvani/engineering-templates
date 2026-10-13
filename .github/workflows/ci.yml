@@ -1,4 +1,4 @@
-# TEMPLATE: GitHub Actions CI. Runs on every push / PR: install -> lint -> test -> build image.
+# TEMPLATE: GitHub Actions CI with uv. Runs on every push / PR: install (locked) -> lint -> test -> build image.
 # Shape: on (trigger) -> jobs -> runs-on -> steps (checkout -> setup -> install -> check -> build)
 name: ci
 
@@ -13,31 +13,31 @@ jobs:
     strategy:
       fail-fast: false                       # one folder failing doesn't cancel the others
       matrix:                                # same steps, run once per folder (in parallel)
-        app: [fastapi-app, auth-jwt, llm-testing, llm-streaming, mcp-server, async-jobs, observability]
+        app: [fastapi-app, auth-jwt, llm-testing, llm-streaming, mcp-server, async-jobs, observability, llm, python]
     defaults:
       run:
         working-directory: ${{ matrix.app }} # all `run:` steps execute in this folder
     steps:
       - uses: actions/checkout@v5            # get the repo code
 
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7          # installs uv; Python version comes from .python-version
         with:
-          python-version: "3.12"
-          cache: pip                         # reuse downloaded packages between runs
-          cache-dependency-path: ${{ matrix.app }}/requirements.txt
+          enable-cache: true
+          cache-dependency-glob: ${{ matrix.app }}/uv.lock
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt ruff
+      - name: Install (exact locked versions)
+        run: uv sync --locked                # fails if uv.lock is missing or out of date
 
       - name: Lint
-        run: ruff check --output-format=github .   # fast linter; fails the job on errors
+        run: uv run ruff check --output-format=github .   # fast linter; fails the job on errors
 
       - name: Test
+        if: matrix.app != 'llm' && matrix.app != 'python'   # these two folders are scripts without tests
         shell: bash
         run: |
           # On failure, turn the error lines into GitHub annotations (visible on the run page).
           set +e   # GitHub's bash runs with -e; turn it off so we reach the error-reporting line
-          pytest -q --tb=short -rf 2>&1 | tee pytest.log; code=${PIPESTATUS[0]}
+          uv run pytest -q --tb=short -rf 2>&1 | tee pytest.log; code=${PIPESTATUS[0]}
           if [ $code -ne 0 ]; then grep -E '^E |^FAILED' pytest.log | head -8 | sed 's/^/::error::/'; fi
           exit $code
 
@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          { alembic upgrade head && alembic check && alembic downgrade base; } 2>&1 | tee alembic.log \
+          { uv run alembic upgrade head && uv run alembic check && uv run alembic downgrade base; } 2>&1 | tee alembic.log \
             || { grep -E "Error|error" alembic.log | head -10 | sed 's/^/::error::/'; exit 1; }
 
   docker:

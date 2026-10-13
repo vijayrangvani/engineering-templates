@@ -1,23 +1,30 @@
-# TEMPLATE: production Dockerfile for a Python API.
-# Shape: base -> env -> workdir -> deps (cached layer) -> code -> non-root user -> port -> start command
+# TEMPLATE: production Dockerfile for a Python API, using uv.
+# Shape: base -> uv -> env -> workdir -> deps (cached layer, from the lock) -> code -> non-root user -> port -> start
 
-# Slim official image: small, but has what pip needs. Pin the minor version.
-FROM python:3.12-slim
+# Slim official image; keep the version equal to .python-version.
+FROM python:3.14-slim
 
-# No .pyc files; logs go straight to stdout (so `docker logs` shows them immediately).
+# uv binary from its official image (pinned version, no pip needed).
+COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /bin/uv
+
+# No .pyc at runtime; logs go straight to stdout; uv pre-compiles bytecode at install time.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
-# Copy requirements FIRST: this layer is cached until requirements.txt changes,
-# so code edits don't trigger a full reinstall.
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Copy ONLY the dependency files first: this layer is cached until pyproject.toml / uv.lock change,
+# so code edits don't trigger a full reinstall. --locked = fail if the lock is out of date.
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --locked --no-dev
 
 # Now the code (changes often -> last).
 COPY app ./app
+
+# Use the venv uv created without "activate".
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Don't run as root: limits damage if the app is compromised.
 RUN useradd --create-home appuser

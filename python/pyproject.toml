@@ -1,0 +1,20 @@
+# Managed with uv:  uv sync  (creates .venv with the exact versions in uv.lock)
+#   add a package:  uv add <pkg>        dev-only:  uv add --dev <pkg>
+#   run anything:   uv run pytest  /  uv run uvicorn app.main:app --reload
+[project]
+name = "python-template"
+version = "0.1.0"
+description = "Logging, HTTP client with retries, CLI script"
+requires-python = ">=3.14"             # keep equal to .python-version
+dependencies = [
+    "httpx>=0.27",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.17"]
+
+[tool.uv]
+package = false                        # an app / script folder, not an installable library
+
+[tool.ruff]
+target-version = "py314"
