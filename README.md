@@ -27,6 +27,8 @@ Start new projects from here instead of random copy-paste, and understand every 
 4. **Weekly drill:** rebuild one template from a blank file, then diff against this repo.
 
 ## Run any folder
+Every folder is its own uv project: `pyproject.toml` + `uv.lock` + `.python-version` (3.14). Refresh all locks from GitHub with Actions → **update-locks** → Run workflow.
+
 ```bash
 cd <folder> && uv sync && uv run pytest -q     # one-time: brew install uv
 ```
