@@ -32,7 +32,7 @@ class Base(DeclarativeBase):
     """All ORM models inherit from this, so Base.metadata knows every table."""
 
 
-def get_db() -> Generator[Session, None, None]:
+def get_db() -> Generator[Session]:          # Python 3.13+: send/return types default to None
     """FastAPI dependency: `db: Session = Depends(get_db)`.
 
     `yield` hands the session to the route; code after yield runs when the request ends.

@@ -1,6 +1,6 @@
 """TEMPLATE: LangGraph tool-calling agent with memory.
 
-Shape: State -> nodes (llm, tools) -> edges (llm -> tools if tool call, else END) -> compile(checkpointer)
+Shape: State -> nodes (llm, tools) -> edges (llm -> tools if tool call, else finish) -> compile(checkpointer)
 Run:  python langgraph_agent.py   (needs OPENAI_API_KEY)
 """
 from typing import Annotated, TypedDict
@@ -10,7 +10,7 @@ from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 

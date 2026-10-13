@@ -18,6 +18,6 @@ if __name__ == "__main__":
     log = logging.getLogger(__name__)
     log.info("started")
     try:
-        1 / 0
-    except ZeroDivisionError:
+        int("not-a-number")                   # raises ValueError on purpose
+    except ValueError:
         log.exception("calculation failed")   # .exception() includes the traceback
