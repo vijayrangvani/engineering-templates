@@ -1,0 +1,22 @@
+# TEMPLATE: Job = run a container to completion once. Used here to apply DB migrations.
+# Why a Job and not app startup: with 3 replicas, every pod would race to migrate at the same time.
+# Apply it BEFORE the Deployment on each release (delete the old Job first: Jobs are immutable):
+#   kubectl -n items delete job items-migrate --ignore-not-found && kubectl apply -f 07-migrate-job.yaml
+#   kubectl -n items wait --for=condition=complete job/items-migrate --timeout=120s
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: items-migrate
+  namespace: items
+spec:
+  backoffLimit: 2                  # retry twice (e.g. DB not ready yet), then mark the Job failed
+  template:
+    spec:
+      restartPolicy: Never         # Jobs must use Never or OnFailure
+      containers:
+        - name: migrate
+          image: items-api:1.0     # same image as the app: it contains alembic.ini + migrations/
+          imagePullPolicy: IfNotPresent
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - secretRef: { name: items-secret }   # needs DATABASE_URL

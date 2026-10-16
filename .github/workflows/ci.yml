@@ -7,6 +7,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read                             # CI only reads the repo (least privilege)
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,6 +33,8 @@ jobs:
 
       - name: Lint
         run: uv run ruff check --output-format=github .   # fast linter; fails the job on errors
+      # No `ruff format --check` here on purpose: the formatter would wrap lines and break the
+      # hand-aligned teaching comments. Lint (above) still catches real bugs.
 
       - name: Test
         if: matrix.app != 'llm' && matrix.app != 'python'   # these two folders are scripts without tests
@@ -58,5 +63,35 @@ jobs:
       - uses: actions/checkout@v5
       - name: Build image
         run: docker build -t items-api:${{ github.sha }} fastapi-app   # tag with commit SHA
+
+      - name: Smoke test the container (non-root user can write SQLite, migrations ship in the image)
+        shell: bash
+        run: |
+          # Run migrations, then the app, with SQLite inside the container as the non-root user.
+          docker run -d --name api -p 8000:8000 -e DATABASE_URL=sqlite:///./app.db items-api:${{ github.sha }} \
+            sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+          for i in $(seq 1 20); do curl -fs localhost:8000/ready && exit 0; sleep 1; done
+          docker logs api; exit 1
+
+      - name: Build multi-stage Dockerfile
+        run: docker build -f docker/Dockerfile.multistage -t items-api-multistage fastapi-app
       # To push to a registry, add a login step (e.g. docker/login-action@v3) with
       # credentials from repo Settings -> Secrets: ${{ secrets.REGISTRY_TOKEN }}
+
+  infra:
+    # Syntax/schema checks only: nothing is created and no cloud credentials are needed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - name: Terraform validate
+        working-directory: terraform
+        run: |
+          terraform init -backend=false -input=false   # downloads the provider, no state
+          terraform validate
+      - name: Kubernetes manifests match the API schema
+        run: docker run --rm -v "$PWD/k8s:/k8s" ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary /k8s
+      - name: Compose files are valid
+        run: |
+          docker compose -f docker/docker-compose.yml config -q
+          docker compose -f observability/docker-compose.yml config -q

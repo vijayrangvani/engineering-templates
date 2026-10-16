@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app import main
 from app.main import USERS, app
-from app.security import create_access_token
+from app.security import DEV_SECRET, create_access_token, load_secret
 
 
 @pytest.fixture
@@ -53,3 +54,20 @@ def test_role_check_403(client):
     user = register_and_login(client, "bob")
     assert client.get("/admin/stats", headers=auth(admin)).status_code == 200
     assert client.get("/admin/stats", headers=auth(user)).status_code == 403
+
+
+def test_unknown_user_still_runs_password_check(client, monkeypatch):
+    """Regression: skipping the slow hash check for unknown users leaks which usernames exist."""
+    calls = []
+    real_verify = main.verify_password
+    monkeypatch.setattr(main, "verify_password", lambda pw, h: calls.append(h) or real_verify(pw, h))
+    r = client.post("/token", data={"username": "nobody", "password": "secret123"})
+    assert r.status_code == 401
+    assert len(calls) == 1
+
+
+def test_secret_required_outside_dev():
+    with pytest.raises(RuntimeError):
+        load_secret({"ENVIRONMENT": "prod"})
+    assert load_secret({"ENVIRONMENT": "prod", "JWT_SECRET": "s3cret"}) == "s3cret"
+    assert load_secret({}) == DEV_SECRET   # dev default still works for local learning

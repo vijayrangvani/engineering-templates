@@ -20,14 +20,19 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev
 
-# Now the code (changes often -> last).
+# Now the code (changes often -> last). Migrations ship in the image so `alembic upgrade head`
+# can run from it as a one-off step (Compose `migrate` service / K8s Job).
 COPY app ./app
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 # Use the venv uv created without "activate".
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Don't run as root: limits damage if the app is compromised.
-RUN useradd --create-home appuser
+# chown the DIRECTORY only (not -R): appuser can create files like a SQLite db in /app,
+# but can't modify the code files, which stay root-owned.
+RUN useradd --create-home appuser && chown appuser /app
 USER appuser
 
 # Documentation only; the real mapping is `-p host:8000` or the K8s Service.
