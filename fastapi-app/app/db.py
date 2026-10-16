@@ -13,8 +13,20 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
-# SQLite + threads: FastAPI may use the connection from another thread, so allow it.
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+DB_CONNECT_TIMEOUT_S = 2   # keep below the K8s readinessProbe timeoutSeconds (3)
+
+
+def connect_args_for(url: str) -> dict:
+    """Driver-specific connection options."""
+    if url.startswith("sqlite"):
+        # SQLite + threads: FastAPI may use the connection from another thread, so allow it.
+        return {"check_same_thread": False}
+    # Postgres: without this, connecting to an unreachable host can hang for minutes,
+    # stalling /ready (and every request) instead of failing fast.
+    return {"connect_timeout": DB_CONNECT_TIMEOUT_S}
+
+
+connect_args = connect_args_for(settings.database_url)
 
 # Engine = connection pool to the database. Create ONCE per process, not per request.
 engine = create_engine(

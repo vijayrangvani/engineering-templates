@@ -47,20 +47,29 @@ async def observe(request: Request, call_next):
     rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex   # reuse caller's id if given
     request_id_var.set(rid)
     start = time.perf_counter()
-    response = await call_next(request)
-    duration = time.perf_counter() - start
-
-    # Label with the route TEMPLATE (/items/{id}), not the raw URL (/items/123): raw URLs create
-    # a new time series per id and can crash Prometheus ("label cardinality explosion").
-    route = request.scope.get("route")
-    path = route.path if route else "unmatched"
-    if path != "/metrics":
-        REQUESTS.labels(request.method, path, response.status_code).inc()
-        LATENCY.labels(request.method, path).observe(duration)
-        log.info("request", extra={"extra_fields": {
-            "method": request.method, "path": path,
-            "status": response.status_code, "ms": round(duration * 1000, 1),
-        }})
+    status = 500                       # if call_next raises, the client gets a 500: record it as one
+    try:
+        response = await call_next(request)
+        status = response.status_code
+    except Exception:
+        # Crashes are the requests you most need to see: log WITH the traceback, then re-raise
+        # so FastAPI still returns its normal 500. Never swallow the error here.
+        log.exception("unhandled error")
+        raise
+    finally:
+        # `finally` runs on success AND on crash, so every request is counted and timed.
+        duration = time.perf_counter() - start
+        # Label with the route TEMPLATE (/items/{id}), not the raw URL (/items/123): raw URLs create
+        # a new time series per id and can crash Prometheus ("label cardinality explosion").
+        route = request.scope.get("route")
+        path = route.path if route else "unmatched"
+        if path != "/metrics":
+            REQUESTS.labels(request.method, path, status).inc()
+            LATENCY.labels(request.method, path).observe(duration)
+            log.info("request", extra={"extra_fields": {
+                "method": request.method, "path": path,
+                "status": status, "ms": round(duration * 1000, 1),
+            }})
     response.headers["X-Request-ID"] = rid
     return response
 
@@ -69,6 +78,12 @@ async def observe(request: Request, call_next):
 def get_item(item_id: int):
     log.info("fetching item", extra={"extra_fields": {"item_id": item_id}})
     return {"id": item_id}
+
+
+@app.get("/fail")
+def fail():
+    """Deliberately broken route: shows that crashes still get logged and counted as 500s."""
+    raise RuntimeError("boom")
 
 
 @app.get("/metrics")

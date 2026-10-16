@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 
 from app.security import (
+    DUMMY_HASH,
     create_access_token,
     decode_token,
     hash_password,
@@ -85,8 +86,12 @@ def register(data: UserCreate):
 def login(form: Annotated[OAuth2PasswordRequestForm, Depends()]):
     """OAuth2 standard: form fields `username` + `password` (not JSON)."""
     user = USERS.get(form.username)
-    # Same error for "no user" and "wrong password": don't reveal which usernames exist.
-    if not user or not verify_password(form.password, user["hashed_password"]):
+    # Don't reveal which usernames exist: same error for "no user" and "wrong password", AND the
+    # same timing. Argon2 is deliberately slow (~tens of ms), so skipping it for unknown users would
+    # make them answer measurably faster. Always run one verify, against a dummy hash if needed.
+    hashed = user["hashed_password"] if user else DUMMY_HASH
+    password_ok = verify_password(form.password, hashed)
+    if not user or not password_ok:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Incorrect username or password",

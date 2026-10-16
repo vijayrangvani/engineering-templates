@@ -7,13 +7,16 @@ kind create cluster --name dev
 docker build -t items-api:1.0 ../fastapi-app
 kind load docker-image items-api:1.0 --name dev   # copy local image into the cluster nodes
 cp 02-secret.example.yaml 02-secret.yaml          # edit values (02-secret.yaml is git-ignored)
-kubectl apply -f 00-namespace.yaml -f 01-configmap.yaml -f 02-secret.yaml -f 03-deployment.yaml -f 04-service.yaml
+kubectl apply -f 00-namespace.yaml -f 01-configmap.yaml -f 02-secret.yaml
+kubectl apply -f 07-migrate-job.yaml                                       # create tables first
+kubectl -n items wait --for=condition=complete job/items-migrate --timeout=120s
+kubectl apply -f 03-deployment.yaml -f 04-service.yaml
 kubectl -n items get pods,svc
 kubectl -n items port-forward svc/items-api 8000:80
 ```
 
-The default DATABASE_URL points to a Postgres that is not in this folder. For a quick test, set it to
-`sqlite:///./app.db` in your secret.
+The default DATABASE_URL points to a Postgres that is not in this folder. Don't use SQLite here: each
+pod (and the migrate Job) would get its own separate, empty database file.
 
 ## Don't memorise fields, look them up
 ```bash

@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db import Base, get_db
+from app.db import Base, connect_args_for, get_db
 from app.main import app
 
 # In-memory SQLite; StaticPool keeps ONE connection so all sessions see the same DB.
@@ -55,3 +55,21 @@ def test_update_and_delete(client):
 
 def test_health(client):
     assert client.get("/health").json() == {"status": "ok"}
+
+
+def test_ready(client):
+    assert client.get("/ready").json() == {"status": "ready"}
+
+
+def test_ready_returns_503_when_db_fails(client):
+    class BrokenSession:
+        def execute(self, *args):
+            raise ConnectionError("db down")
+
+    app.dependency_overrides[get_db] = lambda: BrokenSession()
+    assert client.get("/ready").status_code == 503
+
+
+def test_postgres_connections_have_a_timeout():
+    assert "connect_timeout" in connect_args_for("postgresql+psycopg://u:p@db:5432/app")
+    assert connect_args_for("sqlite:///./app.db") == {"check_same_thread": False}

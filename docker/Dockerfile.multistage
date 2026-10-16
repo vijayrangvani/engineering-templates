@@ -16,9 +16,13 @@ RUN uv sync --locked --no-dev                # builds wheels with compilers avai
 FROM python:3.14-slim
 ENV PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
 WORKDIR /app
-COPY --from=builder /app/.venv /app/.venv    # only the finished venv crosses over
+# Only the finished venv crosses over. (Dockerfile comments must start the line:
+# a trailing "# ..." on a COPY line is read as more files to copy and breaks the build.)
+COPY --from=builder /app/.venv /app/.venv
 COPY app ./app
-RUN useradd --create-home appuser
+# chown the DIRECTORY only (not -R): appuser can create files like a SQLite db here,
+# but can't modify the code files, which stay root-owned.
+RUN useradd --create-home appuser && chown appuser /app
 USER appuser
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

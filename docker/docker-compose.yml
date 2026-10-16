@@ -3,6 +3,16 @@
 # Shape per service: image/build -> environment -> ports -> volumes -> depends_on -> healthcheck
 
 services:
+  # One-off job: apply DB migrations, then exit. The API waits for it to finish successfully.
+  migrate:
+    build: ../fastapi-app
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build: ../fastapi-app                    # build from the Dockerfile in that folder
     environment:
@@ -14,6 +24,8 @@ services:
     depends_on:
       db:
         condition: service_healthy           # wait until Postgres ACCEPTS connections, not just starts
+      migrate:
+        condition: service_completed_successfully   # schema exists before the API takes traffic
       redis:
         condition: service_started
     restart: unless-stopped

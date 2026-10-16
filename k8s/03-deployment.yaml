@@ -36,6 +36,7 @@ spec:
             httpGet: { path: /ready, port: 8000 }
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3              # default is 1s; must exceed the app's DB connect timeout (2s)
           livenessProbe:                   # failing -> container restarted
             httpGet: { path: /health, port: 8000 }
             initialDelaySeconds: 10

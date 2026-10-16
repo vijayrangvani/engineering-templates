@@ -39,9 +39,10 @@ cd fastapi-app
 uv sync                           # creates .venv on Python 3.14 with locked versions
 cp .env.example .env
 uv run pytest -q                   # tests
+uv run alembic upgrade head        # create the tables (the app doesn't create them itself)
 uv run uvicorn app.main:app --reload   # http://localhost:8000/docs
 
-cd ../docker && docker compose up -d --build   # API + Postgres + Redis
+cd ../docker && docker compose up -d --build   # Postgres + Redis, runs migrations, then the API
 ```
 
 ## Not covered yet (add when a project needs it)

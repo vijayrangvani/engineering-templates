@@ -16,4 +16,5 @@ alembic check                                     # fails if models and migratio
 Rules:
 - Never edit a migration that's already applied on a shared DB. Write a new one.
 - Commit migrations with the model change in the same PR.
-- In production, run `alembic upgrade head` as a deploy step (or K8s Job / init container), not in app startup.
+- The app does NOT create tables on startup: run `alembic upgrade head` first, locally too.
+- In production, run it as a deploy step: the `migrate` service in `docker/docker-compose.yml`, or `k8s/07-migrate-job.yaml`.
